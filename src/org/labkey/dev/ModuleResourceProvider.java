@@ -104,15 +104,63 @@ public class ModuleResourceProvider implements WebdavService.Provider
                         root = list.get(0);
                 }
                 if (null != root)
-                return new _ModuleSourceResource(getPath().append(module.getName()),root);
+                    return new _ModuleSourceResource(getPath().append(module.getName()),root,true);
             }
             return null;
+        }
+
+        @Override
+        public boolean shouldIndex()
+        {
+            return false;
         }
 
         @Override
         public boolean canRead(User user, boolean forRead)
         {
             return user.isDeveloper() || user.isSiteAdmin();
+        }
+
+        @Override
+        public boolean canList(User user, boolean forRead)
+        {
+            return true;
+        }
+
+        @Override
+        public boolean canWrite(User user, boolean forWrite)
+        {
+            return user.isDeveloper() || user.isSiteAdmin();
+        }
+
+        @Override
+        public boolean canCreate(User user, boolean forCreate)
+        {
+            return false;
+        }
+
+        @Override
+        public boolean canCreateCollection(User user, boolean forCreate)
+        {
+            return false;
+        }
+
+        @Override
+        public boolean canDelete(User user, boolean forDelete)
+        {
+            return false;
+        }
+
+        @Override
+        public boolean canDelete(User user, boolean forDelete, @Nullable List<String> message)
+        {
+            return false;
+        }
+
+        @Override
+        public boolean canRename(User user, boolean forRename)
+        {
+            return false;
         }
 
         @Override
@@ -131,10 +179,17 @@ public class ModuleResourceProvider implements WebdavService.Provider
 
     static class _ModuleSourceResource extends FileSystemResource
     {
-        _ModuleSourceResource(Path p, File file)
+        final boolean _moduleRoot;
+        _ModuleSourceResource(Path p, File file, boolean root)
         {
             super(p);
             _files = Collections.singletonList(new FileInfo(FileUtil.getAbsoluteCaseSensitiveFile(file)));
+            _moduleRoot = root;
+        }
+
+        _ModuleSourceResource(Path p, File file)
+        {
+            this(p,file,false);
         }
 
         @Override
@@ -257,7 +312,7 @@ public class ModuleResourceProvider implements WebdavService.Provider
         @Override
         public boolean canWrite(User user, boolean forWrite)
         {
-            return user.isDeveloper() || user.isSiteAdmin();
+            return !_moduleRoot && (user.isDeveloper() || user.isSiteAdmin());
         }
 
         @Override
@@ -267,15 +322,21 @@ public class ModuleResourceProvider implements WebdavService.Provider
         }
 
         @Override
-        public boolean canDelete(User user, boolean forDelete, @Nullable List<String> message)
+        public boolean canCreateCollection(User user, boolean forCreate)
         {
             return user.isDeveloper() || user.isSiteAdmin();
         }
 
         @Override
+        public boolean canDelete(User user, boolean forDelete, @Nullable List<String> message)
+        {
+            return !_moduleRoot && (user.isDeveloper() || user.isSiteAdmin());
+        }
+
+        @Override
         public boolean canRename(User user, boolean forRename)
         {
-            return user.isDeveloper() || user.isSiteAdmin();
+            return !_moduleRoot && (user.isDeveloper() || user.isSiteAdmin());
         }
 
         @Override
