@@ -26,6 +26,7 @@
     {
         LinkedHashSet<ClientDependency> resources = new LinkedHashSet<>();
         resources.add(ClientDependency.fromPath("Ext4"));
+        resources.add(ClientDependency.fromPath("File"));
         resources.add(ClientDependency.fromPath("codemirror"));
         return resources;
     }
@@ -34,31 +35,132 @@
     ModuleEditorController.PathForm form = (ModuleEditorController.PathForm)HttpView.currentModel();
     String path = form.getPath();
 %>
-<%=button("Save")%>
 <p></p>
-<div id="path"></div>
-<p></p>
-<textarea id="moduleEditor" style="height:600px; width:800px;">
-</textarea>
+<table><tr>
+<td>
+    <div id="filepicker" style="height:600px; width:200px;"></div>
+</td>
+<td>
+    <div id="path" style="height:14pt; border:solid gray 1px;"></div>
+    <textarea id="moduleEditor" style="height:600px; width:800px;"></textarea>
+    <%=button("Save").onClick("Save_onClick()").build()%>
+</td>
+</tr></table>
 <script>
-LABKEY.Utils.onReady(function ()
+var editor;
+var filetree;
+var fileSystem;
+var path;
+var uri;
+LABKEY.Utils.onReady(Editor_onPageReady);
+
+function Editor_onPageReady()
 {
-    var path = <%=q(path)%>;
-    if (!path && window.location.hash)
-        path = window.location.hash.substring(1);
-    if (!Ext4.String.startsWith(path,"/"))
-        path = "/" + path;
-    path = <%=q(getContextPath())%> + "/_webdav/@modules" + path;
-    Ext4.get("path").update(Ext4.htmlEncode(path));
-    // Create json editor
-    var editor = CodeMirror.fromTextArea(document.getElementById("moduleEditor"),
+    fileSystem = Ext4.create('File.system.Webdav',
+        {
+            rootPath: LABKEY.contextPath + "/_webdav/@modules/",
+            rootName: 'Modules'
+        });
+
+    // EDITOR
+    editor = CodeMirror.fromTextArea(document.getElementById("moduleEditor"),
     {
         mode: {name: 'javascript', json: true},
         lineNumbers: true,
         lineWrapping: false
     });
-
-    editor.setSize(800, 300);
+    editor.setSize(800, 600);
     LABKEY.codemirror.RegisterEditorInstance('moduleEditor', editor);
-});
+
+
+    // FILE TREE
+    var storeConfig =
+    {
+        model : fileSystem.getModel('xml'),
+        proxy : Ext4.apply({requestFiles:true}, fileSystem.getProxyCfg('xml')),
+        root :
+        {
+            text : fileSystem.rootName,
+            name : fileSystem.rootName,
+            id : fileSystem.getBaseURL(),
+            uri : fileSystem.getAbsoluteURL(),
+            expanded : true,
+            icon : LABKEY.contextPath + '/_images/labkey.png'
+        }
+    };
+    var config =
+    {
+        itemId: Ext4.id(),
+        id: Ext4.id(),
+        store: Ext4.create('Ext.data.TreeStore', storeConfig),
+        height: 600,
+        width: 300,
+        header: false,
+        listeners : {},
+        rootVisible     : true,
+        autoScroll      : true,
+        containerScroll : true,
+        collapsible     : false,
+        collapsed       : false,
+        cmargins        : '0 0 0 0',
+        border          : true,
+        stateful        : false,
+        pathSeparator   : ';',
+        renderTo : 'filepicker'
+    };
+    filetree = Ext4.create('Ext.tree.Panel', config);
+    filetree.on({select:FileTree_onSelect});
+    filetree.render();
+}
+
+
+function FileTree_onSelect( tree, record, index, eOpts )
+{
+    if (!record.get("file"))
+        return;
+    var contentType = record.get("contentType") || record.get("contenttype");
+    if (!Ext4.String.startsWith(contentType,"text/"))
+        return;
+    openFile(record);
+}
+
+function openFile(record)
+{
+    uri = null;
+    path = null;
+
+    var openuri = record.get("uri");
+    var openpath = record.get("path");
+    Ext4.Ajax.request(
+    {
+        url: openuri,
+        success: function(response)
+        {
+            editor.setValue(response.responseText);
+            uri = openuri;
+            path = openpath;
+            Ext4.get('path').update(Ext4.htmlEncode(path));
+        }
+    });
+}
+
+function Save_onClick()
+{
+    var i = uri.lastIndexOf("/");
+    var parent = uri.substring(0,i);
+    var filename = uri.substring(i+1);
+
+    Ext4.Ajax.request(
+    {
+        url: parent,
+        method:'POST',
+        params:{filename:filename, content:editor.getValue()},
+        success: function(response)
+        {
+            alert(path + ' saved');
+        }
+    });
+}
+
+
 </script>

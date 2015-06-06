@@ -97,12 +97,14 @@ public class ModuleResourceProvider implements WebdavService.Provider
                 File root = null;
                 if (null != module.getSourcePath())
                     root = new File(module.getSourcePath());
+/* UNDONE: a lot of resourcea are NOT under /resources/ need to use sourceRoot
                 if (module instanceof DefaultModule)
                 {
                     List<File> list = ((DefaultModule) module).getResourceDirectories();
                     if (list.size() == 1)
                         root = list.get(0);
                 }
+*/
                 if (null != root)
                     return new _ModuleSourceResource(getPath().append(module.getName()),root,true);
             }
