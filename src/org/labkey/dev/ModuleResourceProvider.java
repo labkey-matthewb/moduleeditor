@@ -26,9 +26,11 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 /**
  * Created by matthew on 6/4/15.
@@ -81,6 +83,7 @@ public class ModuleResourceProvider implements WebdavService.Provider
                 if (sourcePathMatched && enlistmentIdMatched)
                     ret.add(module.getName());
             }
+	    ret.sort(String.CASE_INSENSITIVE_ORDER);
             return ret;
         }
 
@@ -394,7 +397,10 @@ public class ModuleResourceProvider implements WebdavService.Provider
         @Override
         public Map<String, String> getCustomProperties(User user)
         {
-            return Collections.emptyMap();
+            Map<String,String> map = new TreeMap();
+            if (AppProps.getInstance().isDevMode())
+                map.put("sourcePath",getFile().getAbsolutePath());
+            return map;
         }
 
         @Override
