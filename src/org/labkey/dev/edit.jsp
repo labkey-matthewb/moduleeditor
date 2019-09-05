@@ -19,16 +19,15 @@
 <%@ page import="org.labkey.api.view.template.ClientDependency" %>
 <%@ page import="java.util.LinkedHashSet" %>
 <%@ page import="org.labkey.dev.ModuleEditorController" %>
+<%@ page import="org.labkey.api.view.template.ClientDependencies" %>
 <%@ page extends="org.labkey.api.jsp.JspBase" %>
 <%@ taglib prefix="labkey" uri="http://www.labkey.org/taglib" %>
 <%!
-    public LinkedHashSet<ClientDependency> getClientDependencies()
+    public void addClientDependencies(ClientDependencies dependencies)
     {
-        LinkedHashSet<ClientDependency> resources = new LinkedHashSet<>();
-        resources.add(ClientDependency.fromPath("Ext4"));
-        resources.add(ClientDependency.fromPath("File"));
-        resources.add(ClientDependency.fromPath("codemirror"));
-        return resources;
+        dependencies.add(ClientDependency.fromPath("Ext4"));
+        dependencies.add(ClientDependency.fromPath("File"));
+        dependencies.add(ClientDependency.fromPath("codemirror"));
     }
 %>
 <%

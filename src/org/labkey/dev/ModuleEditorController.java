@@ -2,7 +2,7 @@ package org.labkey.dev;
 
 import org.labkey.api.action.SimpleViewAction;
 import org.labkey.api.action.SpringActionController;
-import org.labkey.api.security.RequiresPermissionClass;
+import org.labkey.api.security.RequiresPermission;
 import org.labkey.api.security.permissions.ReadPermission;
 import org.labkey.api.view.JspView;
 import org.labkey.api.view.NavTree;
@@ -30,19 +30,21 @@ public class ModuleEditorController extends SpringActionController
             return path;
         }
 
+        @SuppressWarnings("unused")
         public void setPath(String path)
         {
             this.path = path;
         }
     }
 
-    @RequiresPermissionClass(ReadPermission.class)
+    @RequiresPermission(ReadPermission.class)
+    @SuppressWarnings("unused")
     public static class EditAction extends SimpleViewAction<PathForm>
     {
         @Override
-        public ModelAndView getView(PathForm form, BindException errors) throws Exception
+        public ModelAndView getView(PathForm form, BindException errors)
         {
-            return new JspView("/org/labkey/dev/edit.jsp",form);
+            return new JspView<>("/org/labkey/dev/edit.jsp",form);
         }
 
         @Override

@@ -14,6 +14,7 @@ import org.labkey.api.util.FileUtil;
 import org.labkey.api.util.Path;
 import org.labkey.api.view.NavTree;
 import org.labkey.api.webdav.AbstractWebdavResourceCollection;
+import org.labkey.api.webdav.DavException;
 import org.labkey.api.webdav.FileSystemResource;
 import org.labkey.api.webdav.WebdavResolver;
 import org.labkey.api.webdav.WebdavResource;
@@ -26,7 +27,6 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -39,9 +39,8 @@ public class ModuleResourceProvider implements WebdavService.Provider
 {
     Path rootPath = Path.parse("/_webdav/");
 
-    @Nullable
     @Override
-    public Set<String> addChildren(@NotNull WebdavResource target)
+    public @Nullable Set<String> addChildren(@NotNull WebdavResource target, boolean isListing)
     {
         if (!AppProps.getInstance().isDevMode())
             return null;
@@ -123,7 +122,7 @@ public class ModuleResourceProvider implements WebdavService.Provider
         @Override
         public boolean canRead(User user, boolean forRead)
         {
-            return user.isDeveloper() || user.isSiteAdmin();
+            return user.isPlatformDeveloper();
         }
 
         @Override
@@ -135,7 +134,7 @@ public class ModuleResourceProvider implements WebdavService.Provider
         @Override
         public boolean canWrite(User user, boolean forWrite)
         {
-            return user.isDeveloper() || user.isSiteAdmin();
+            return user.isPlatformDeveloper();
         }
 
         @Override
@@ -264,7 +263,7 @@ public class ModuleResourceProvider implements WebdavService.Provider
         }
 
         @Override
-        public void moveFrom(User user, WebdavResource src) throws IOException
+        public void moveFrom(User user, WebdavResource src) throws IOException, DavException
         {
             super.moveFrom(user, src);
         }
@@ -311,43 +310,43 @@ public class ModuleResourceProvider implements WebdavService.Provider
         @Override
         public boolean canRead(User user, boolean forRead)
         {
-            return user.isDeveloper() || user.isSiteAdmin();
+            return user.isPlatformDeveloper();
         }
 
         @Override
         public boolean canWrite(User user, boolean forWrite)
         {
-            return !_moduleRoot && (user.isDeveloper() || user.isSiteAdmin());
+            return !_moduleRoot && user.isPlatformDeveloper();
         }
 
         @Override
         public boolean canCreate(User user, boolean forCreate)
         {
-            return user.isDeveloper() || user.isSiteAdmin();
+            return user.isPlatformDeveloper();
         }
 
         @Override
         public boolean canCreateCollection(User user, boolean forCreate)
         {
-            return user.isDeveloper() || user.isSiteAdmin();
+            return user.isPlatformDeveloper();
         }
 
         @Override
         public boolean canDelete(User user, boolean forDelete, @Nullable List<String> message)
         {
-            return !_moduleRoot && (user.isDeveloper() || user.isSiteAdmin());
+            return !_moduleRoot && user.isPlatformDeveloper();
         }
 
         @Override
         public boolean canRename(User user, boolean forRename)
         {
-            return !_moduleRoot && (user.isDeveloper() || user.isSiteAdmin());
+            return !_moduleRoot && user.isPlatformDeveloper();
         }
 
         @Override
         public boolean canList(User user, boolean forRead)
         {
-            return user.isDeveloper() || user.isSiteAdmin();
+            return user.isPlatformDeveloper();
         }
 
         @Override
@@ -397,9 +396,13 @@ public class ModuleResourceProvider implements WebdavService.Provider
         @Override
         public Map<String, String> getCustomProperties(User user)
         {
-            Map<String,String> map = new TreeMap();
+            Map<String,String> map = new TreeMap<>();
             if (AppProps.getInstance().isDevMode())
-                map.put("sourcePath",getFile().getAbsolutePath());
+            {
+                File f = getFile();
+                if (null != f)
+                    map.put("sourcePath", f.getAbsolutePath());
+            }
             return map;
         }
 
