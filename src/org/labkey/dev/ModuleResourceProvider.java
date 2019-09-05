@@ -25,6 +25,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -79,10 +80,11 @@ public class ModuleResourceProvider implements WebdavService.Provider
             {
                 boolean sourcePathMatched = module instanceof DefaultModule && ((DefaultModule)module).isSourcePathMatched();
                 boolean enlistmentIdMatched = module instanceof DefaultModule && ((DefaultModule)module).isSourceEnlistmentIdMatched();
-                if (sourcePathMatched && enlistmentIdMatched)
+                // TODO  enlistmentId check seems to be broken (or changed behavior with gradle?)
+                if (sourcePathMatched) // && enlistmentIdMatched)
                     ret.add(module.getName());
             }
-	    ret.sort(String.CASE_INSENSITIVE_ORDER);
+	        ret.sort(String.CASE_INSENSITIVE_ORDER);
             return ret;
         }
 
@@ -94,7 +96,7 @@ public class ModuleResourceProvider implements WebdavService.Provider
                 return null;
             boolean sourcePathMatched = module instanceof DefaultModule && ((DefaultModule)module).isSourcePathMatched();
             boolean enlistmentIdMatched = module instanceof DefaultModule && ((DefaultModule)module).isSourceEnlistmentIdMatched();
-            if (sourcePathMatched && enlistmentIdMatched)
+            if (sourcePathMatched) // TODO  && enlistmentIdMatched)
             {
                 File root = null;
                 if (null != module.getSourcePath())
@@ -108,7 +110,7 @@ public class ModuleResourceProvider implements WebdavService.Provider
                 }
 */
                 if (null != root)
-                    return new _ModuleSourceResource(getPath().append(module.getName()),root,true);
+                    return new _ModuleSourceResource(getPath().append(module.getName()), Path.emptyPath, root);
             }
             return null;
         }
@@ -184,16 +186,16 @@ public class ModuleResourceProvider implements WebdavService.Provider
     static class _ModuleSourceResource extends FileSystemResource
     {
         final boolean _moduleRoot;
-        _ModuleSourceResource(Path p, File file, boolean root)
-        {
-            super(p);
-            _files = Collections.singletonList(new FileInfo(FileUtil.getAbsoluteCaseSensitiveFile(file)));
-            _moduleRoot = root;
-        }
+        final Path modulePath;
+        final Path relativePath;
 
-        _ModuleSourceResource(Path p, File file)
+        _ModuleSourceResource(Path modulePath, Path relativePath, File file)
         {
-            this(p,file,false);
+            super(modulePath.append(relativePath));
+            this.modulePath = modulePath;
+            this.relativePath = relativePath;
+            _files = Collections.singletonList(new FileInfo(FileUtil.getAbsoluteCaseSensitiveFile(file)));
+            _moduleRoot = relativePath.size()==0;
         }
 
         @Override
@@ -286,7 +288,7 @@ public class ModuleResourceProvider implements WebdavService.Provider
         {
             File f = _files.get(0).getFile();
             File find = new File(f,name);
-            return new _ModuleSourceResource(getPath().append(name), find);
+            return new _ModuleSourceResource(modulePath, relativePath.append(name), find);
         }
 
         @Override
@@ -316,7 +318,7 @@ public class ModuleResourceProvider implements WebdavService.Provider
         @Override
         public boolean canWrite(User user, boolean forWrite)
         {
-            return !_moduleRoot && user.isPlatformDeveloper();
+            return !_moduleRoot && user.isPlatformDeveloper() && isReloadableResource();
         }
 
         @Override
@@ -415,6 +417,35 @@ public class ModuleResourceProvider implements WebdavService.Provider
         protected List<ExpData> getExpData()
         {
             return null;
+        }
+
+
+        // if path doesn't start with one of these, it is not editable
+        // TODO verify this list
+        static private List<Path> writableResourceDirectories = Arrays.asList(
+            new Path("resources", "etls"),
+            new Path("resources", "olap"),
+            new Path("resources", "pipeline"),
+            new Path("resources", "queries"),
+            new Path("resources", "reports"),
+            new Path("resources", "scripts"),
+            new Path("resources", "views"),
+            new Path("resources", "web"),
+            new Path("etls"),
+            new Path("olap"),
+            new Path("pipeline"),
+            new Path("queries"),
+            new Path("reports"),
+            new Path("scripts"),
+            new Path("views"),
+            new Path("web")
+        );
+
+        public boolean isReloadableResource()
+        {
+            if (writableResourceDirectories.stream().filter(p -> relativePath.startsWith(p)).findAny().isEmpty())
+                return false;
+            return true;
         }
     }
 }
