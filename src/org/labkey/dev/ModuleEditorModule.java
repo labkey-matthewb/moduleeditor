@@ -62,7 +62,7 @@ public class ModuleEditorModule extends DefaultModule implements StartupListener
     @Override
     protected void init()
     {
-        addController("dev",ModuleEditorController.class);
+        addController("moduledev",ModuleEditorController.class);
         ContextListener.addStartupListener(this);
         WebdavService.get().addProvider(new ModuleResourceProvider());
     }

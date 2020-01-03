@@ -315,6 +315,7 @@ public class ModuleResourceProvider implements WebdavService.Provider
             return user.isPlatformDeveloper();
         }
 
+        // TODO distinguish editable/reloadable in the module editor UI
         @Override
         public boolean canWrite(User user, boolean forWrite)
         {
@@ -324,7 +325,7 @@ public class ModuleResourceProvider implements WebdavService.Provider
         @Override
         public boolean canCreate(User user, boolean forCreate)
         {
-            return user.isPlatformDeveloper();
+            return canWrite(user, forCreate);
         }
 
         @Override
@@ -438,7 +439,8 @@ public class ModuleResourceProvider implements WebdavService.Provider
             new Path("reports"),
             new Path("scripts"),
             new Path("views"),
-            new Path("web")
+            new Path("web"),
+            new Path("webapp")
         );
 
         public boolean isReloadableResource()
