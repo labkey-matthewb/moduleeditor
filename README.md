@@ -1,5 +1,5 @@
 # Module Editor Module
-Edit module resources on-line (dev-mode)
+Edit module resources on line (devMode)
 
 ## todo
 * obviously use a reasonable layout
